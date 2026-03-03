@@ -1,8 +1,12 @@
 import subprocess
-from . import states
-from . import find_usb as fu
-
-newlabel = states.new_label   # IMPORT THE CUSTOM LABEL GIVEN BY USER
+import sys
+### TEMPORARY IMPORT SOLUTION ###
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.drives import states
+from src.drives import find_usb as fu
+#######
 
 def pkexecNotFound():
     print("Error: The command pkexec or labeling software was not found on your system.")
