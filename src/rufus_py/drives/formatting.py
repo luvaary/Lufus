@@ -5,9 +5,14 @@ from rufus_py.drives import states
 from rufus_py.drives import find_usb as fu
 #######
 
+
 mount_dict = fu.find_usb()  # GETS THE FIRST KEY FOR NOW
-mount = next(iter(mount_dict))  # IMPORT THE INITIAL MOUNT POINT
-drive = fu.find_DN() # IMPORTS DRIVE NODE
+if mount_dict:
+    mount = next(iter(mount_dict))  # IMPORT THE INITIAL MOUNT POINT
+    drive = fu.find_DN() # IMPORTS DRIVE NODE
+else:
+    mount=None
+    drive=None
 
 def pkexecNotFound():
     print("Error: The command pkexec or labeling software was not found on your system.")
