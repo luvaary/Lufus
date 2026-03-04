@@ -492,10 +492,14 @@ class Rufus(QMainWindow):
     def browse_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Select Disk Image", "", "ISO Images (*.iso);;All Files (*)")
         if file_name:
+            states.iso_path=file_name
+
             clean_name = file_name.split("/")[-1].split("\\")[-1]
             self.combo_boot.setItemText(0, clean_name)
             self.input_label.setText(clean_name.split('.')[0].upper())
+
             self.log_message(f"Selected image: {file_name}")
+            # print(f"iso path:{states.iso_path}")
 
     def show_log(self):
         self.log_window = LogWindow()
