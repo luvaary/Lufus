@@ -77,6 +77,11 @@ class FlashWorker(QThread):
 class Rufus(QMainWindow):
     def __init__(self, usb_devices=None):
         super().__init__()
+        self.monitor = UsbMonitor()
+        self.monitor.device_added.connect(self.on_usb_added)
+        self.monitor.device_removed.connect(self.on_usb_removed)
+        self.monitor.device_list_updated.connect(self.update_usb_list)
+        
         self.usb_devices = usb_devices or {}
         self.setWindowTitle("Rufus")
         self.setFixedSize(640, 700)
@@ -234,6 +239,19 @@ class Rufus(QMainWindow):
         layout.addWidget(label)
         layout.addWidget(line, 1)
         return layout
+    
+    def update_usb_list(self,devices:dict):
+        self.combo_device.clear()
+        
+        if not devices:
+            self.combo_device.addItem("No USB devices found")
+            return
+        
+        for node in devices:
+            self.combo_device.addItem(node)
+
+    def on_usb_added(self, node):
+        QMessageBox.information(self, "USB Inserted", f"{node} connected")
 
     def create_refresh_button(self):
         btn = QToolButton()
