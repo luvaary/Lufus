@@ -231,7 +231,7 @@ def dskformat():
 
 def drive_repair():
     raw_device = drive.rstrip("0123456789")
-    cmd = ["sudo", "sfdisk", raw_device]
+    cmd = ["sfdisk", raw_device]
     try:
         subprocess.run(["umount", drive], check=True)
         subprocess.run(cmd, input=b",,0c;\n", check=True)
