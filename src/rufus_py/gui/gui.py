@@ -327,13 +327,15 @@ class Rufus(QMainWindow):
     
     def update_usb_list(self,devices:dict):
         self.combo_device.clear()
+        self.usb_devices=devices
         
         if not devices:
-            self.combo_device.addItem("No USB devices found")
+            self.combo_device.addItem("No USB devices found", None)
             return
-        
-        for node in devices:
-            self.combo_device.addItem(node)
+
+        for node, label in devices.items():
+            display = f"{label} ({node})" if label != node else node
+            self.combo_device.addItem(display, node) 
 
     def on_usb_added(self, node):
         self.notifier.show(f"✓ {node} connected", notification_type='success', duration=3000)
@@ -619,17 +621,18 @@ class Rufus(QMainWindow):
         self.combo_device.clear()
         
         if self.usb_devices:
-            for path, label in self.usb_devices.items():
-                self.combo_device.addItem(f"{label} ({path})")
+            for node, label in self.usb_devices.items():
+                display = f"{label} ({node})" if label != node else node
+                self.combo_device.addItem(display, node)
         else:
-            self.combo_device.addItem("No USB devices found")
+            self.combo_device.addItem("No USB devices found",None)
         
         self.combo_device.blockSignals(False)
 
     def refresh_usb_devices(self):
         self.statusBar.showMessage("Scanning for USB devices...", 2000)
         try:
-            new_devices = find_usb()
+            new_devices = self.monitor.devices
             
             if new_devices:
                 self.usb_devices = new_devices
@@ -651,7 +654,7 @@ class Rufus(QMainWindow):
         states.currentFS = self.combo_fs.currentIndex()
 
     def updateflash(self):
-        self.combo_device.clear()
+        # self.combo_device.clear()
         states.currentflash = self.combo_flash.currentIndex()
         print(states.currentflash)
     
