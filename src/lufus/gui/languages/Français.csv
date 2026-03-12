@@ -23,7 +23,7 @@ lbl_file_system,Système de fichiers
 lbl_flash_option,Option de flash
 lbl_cluster_size,Taille d'unité d'allocation
 combo_image_windows,Installation standard de Windows
-combo_image_linux,Installation Linux standard
+combo_image_linux,Installation standard de Linux
 combo_image_other,N'importe quelle installation (mode DD)
 combo_image_format,Mode formatage uniquement
 combo_partition_gpt,GPT
