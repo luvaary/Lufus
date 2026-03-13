@@ -1,9 +1,5 @@
-import subprocess
-import json
 import sys
 import os
-import urllib.parse
-from pathlib import Path
 from lufus.drives.find_usb import find_usb
 
 def launch_gui_with_usb_data() -> None:
