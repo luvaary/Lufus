@@ -7,6 +7,7 @@ import signal
 import csv
 import platform
 import getpass
+from platformdirs import user_config_dir
 from datetime import datetime
 from glob import glob
 import urllib.parse
@@ -53,6 +54,7 @@ from lufus.writing.flash_woeusb import flash_woeusb
 from lufus.drives.find_usb import find_usb
 from lufus.drives.autodetect_usb import UsbMonitor
 
+THEME_DIR = Path(__file__).parent / 'themes'
 
 class Scale:
     BASE_DPI = 80.0
@@ -436,166 +438,62 @@ class lufus(QMainWindow):
         self.flash_process.errorOccurred.connect(self.handle_process_error)
         self.log_message(f"UI scale factor: {self._S.f():.3f}  (base 96 DPI)")
 
-    def _apply_styles(self):
-        """Apply stylesheet to the main window"""
+    def _apply_styles(self) -> None:
+        """load json values, apply via .qss, all that yap is in the themes folder :3"""
         S = self._S
+        APP_NAME = "Lufus"
 
-        combo_h      = S.px(28)
-        combo_radius = S.px(6)
-        combo_pad_v  = S.px(4)
-        combo_pad_h  = S.px(6)
-        combo_drop_w = S.px(20)
+        theme_dir = Path(__file__).parent / 'themes'
+        default_theme_path = theme_dir / 'default_theme.json'
+        template_path = theme_dir / 'style_template.qss'
 
-        btn_radius   = S.px(6)
-        btn_pad_v    = S.px(6)
-        btn_pad_h    = S.px(15)
-        btn_min_h    = S.px(32)
-        btn_min_w    = S.px(100)
+        user_config_dir_path = Path(user_config_dir(APP_NAME, roaming=True))
+        user_theme_path = user_config_path = user_config_dir_path / 'user_theme.json'
+        
 
-        tool_size    = S.px(32)
+        try:
+            with open(default_theme_path, 'r', encoding='utf-8') as fr:
+                theme = json.load(fr)
+        except FileNotFoundError as e:
+            # Fallback if this doesn't bother to work... -_-
+            print("WARNING: no theme applied, json didn't load up in _apply_styles, gui.py.")
 
-        prog_h       = S.px(22)
-        prog_radius  = S.px(6)
+        if os.path.exists(user_theme_path):
+            try:
+                with open(user_theme_path, 'r', encoding='utf-8') as fr:
+                    user_theme = json.load(fr)
+                for category in ['colors', 'fonts', 'dimensions']:
+                    if category in user_theme and isinstance(user_theme[category], dict):
+                        theme[category].update(user_theme[category])
+            except Exception as e:
+                print(f"Error loading user theme: {e}")
 
-        base_pt      = S.pt(9)
-        small_pt     = S.pt(8)
-        header_pt    = S.pt(16)
-        notif_pt     = S.pt(11)
+        scaled_theme = {
+                'colors': theme['colors'].copy(),
+                'fonts': {},
+                'dimensions': {}
+            }
 
-        self.setStyleSheet(f"""
-            QMainWindow {{
-                background-color: #F0F0F0;
-                font-family: 'Segoe UI', Tahoma, sans-serif;
-                font-size: {base_pt}pt;
-                color: #000000;
-            }}
-            QLabel {{
-                color: #000000;
-                padding: {S.px(2)}px;
-            }}
-            QLabel#sectionHeader {{
-                font-size: {header_pt}pt;
-                font-weight: normal;
-                color: #000000;
-                padding: {S.px(5)}px 0;
-            }}
-            QComboBox, QLineEdit {{
-                border: 1px solid #D0D0D0;
-                border-radius: {combo_radius}px;
-                padding: {combo_pad_v}px {combo_pad_h}px;
-                background-color: white;
-                min-height: {combo_h}px;
-                font-size: {base_pt}pt;
-                selection-background-color: #0078D7;
-            }}
-            QComboBox:focus, QLineEdit:focus {{
-                border: 1px solid #0078D7;
-            }}
-            QComboBox::drop-down {{
-                width: {combo_drop_w}px;
-                border-left: 1px solid #D0D0D0;
-                border-top-right-radius: {combo_radius}px;
-                border-bottom-right-radius: {combo_radius}px;
-            }}
-            QPushButton {{
-                background-color: #E1E1E1;
-                border: 1px solid #A0A0A0;
-                border-radius: {btn_radius}px;
-                padding: {btn_pad_v}px {btn_pad_h}px;
-                min-height: {btn_min_h}px;
-                min-width: {btn_min_w}px;
-                font-size: {base_pt}pt;
-            }}
-            QPushButton:hover {{
-                background-color: #E5F1FB;
-                border-color: #0078D7;
-            }}
-            QPushButton:pressed {{
-                background-color: #D0D0D0;
-            }}
-            QPushButton:disabled {{
-                color: #888888;
-                background-color: #F0F0F0;
-                border-color: #D0D0D0;
-            }}
-            #btnStart {{
-                background-color: #E1E1E1;
-                border: 1px solid #A0A0A0;
-                border-radius: {btn_radius}px;
-                min-height: {btn_min_h}px;
-                min-width: {btn_min_w}px;
-                padding: {btn_pad_v}px {btn_pad_h}px;
-                font-size: {base_pt}pt;
-            }}
-            #btnStart:hover {{
-                background-color: #E5F1FB;
-                border-color: #0078D7;
-            }}
-            #btnStart:pressed {{
-                background-color: #00AA00;
-            }}
-            #btnStart:disabled {{
-                color: #888888;
-                background-color: #F0F0F0;
-                border-color: #D0D0D0;
-            }}
-            QCheckBox {{
-                spacing: {S.px(6)}px;
-                font-size: {small_pt}pt;
-            }}
-            QCheckBox::indicator {{
-                width:  {S.px(14)}px;
-                height: {S.px(14)}px;
-            }}
-            QProgressBar {{
-                border: 1px solid #A0A0A0;
-                border-radius: {prog_radius}px;
-                text-align: center;
-                background-color: white;
-                height: {prog_h}px;
-                font-size: {base_pt}pt;
-                color: white;
-                font-weight: bold;
-            }}
-            QProgressBar::chunk {{
-                background-color: #00CC00;
-                border-radius: {prog_radius}px;
-            }}
-            QToolButton {{
-                border: 1px solid #D0D0D0;
-                background-color: white;
-                border-radius: {S.px(6)}px;
-                padding: {S.px(4)}px;
-                min-width:  {tool_size}px;
-                max-width:  {tool_size}px;
-                min-height: {tool_size}px;
-                max-height: {tool_size}px;
-                font-size: {S.pt(14)}pt;
-            }}
-            QToolButton:hover {{
-                background-color: #E5F1FB;
-                border-color: #0078D7;
-            }}
-            QToolButton:pressed {{
-                background-color: #D0D0D0;
-            }}
-            QStatusBar {{
-                background-color: #F0F0F0;
-                border-top: 1px solid #D0D0D0;
-                font-size: {base_pt}pt;
-                color: #000000;
-            }}
-            QLabel#linkLabel {{
-                color: #000000;
-                text-decoration: none;
-                font-size: {base_pt}pt;
-            }}
-            QLabel#linkLabel:hover {{
-                color: #0078D7;
-                text-decoration: underline;
-            }}
-        """)
+        for key, value in theme['fonts'].items():
+            scaled_theme['fonts'][key] = S.pt(value)
 
+        for key, value in theme['dimensions'].items():
+            scaled_theme['dimensions'][key] = S.px(value)
+
+        flat_theme: Dict[str, Any] = {}
+        for category, subdict in scaled_theme.items():
+            for key, val in subdict.items():
+                flat_theme[f"{category}_{key}"] = val
+
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = f.read()
+        except FileNotFoundError:
+            print("Error: style_template.qss not found.")
+            return
+
+        style_sheet = template.format(**flat_theme)
+        self.setStyleSheet(style_sheet)
 
     def create_header(self, text):
         layout = QHBoxLayout()
