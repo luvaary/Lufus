@@ -48,10 +48,17 @@ from lufus.drives.autodetect_usb import UsbMonitor
 
 THEME_DIR = Path(__file__).parent / 'themes'
 
+
+def _find_resource_dir(name: str) -> Path | None:
+    candidate = Path(__file__).parent / name
+    return candidate if candidate.is_dir() else None
+
 class Scale:
     BASE_DPI = 80.0
-    DESIGN_W = 640
-    DESIGN_H = 980
+    DESIGN_W = 650
+    DESIGN_H = 900
+    REF_W = 2560
+    REF_H = 1440
 
     def __init__(self, app: QApplication, factor: float = None):
         screen = app.primaryScreen()
@@ -471,15 +478,9 @@ class lufus(QMainWindow):
         self.setWindowTitle(self._T.get("window_title", "lufus"))
 
         screen = QApplication.primaryScreen().availableGeometry()
-        aspect = Scale.DESIGN_W / Scale.DESIGN_H
-        win_w = int(screen.width() * 0.450)
-        win_h = int(win_w / aspect)
-        if win_h > int(screen.height() * 0.9):
-            win_h = int(screen.height() * 0.9)
-            win_w = int(win_h * aspect)
-        if win_w > int(screen.width() * 0.9):
-            win_w = int(screen.width() * 0.9)
-            win_h = int(win_w / aspect)
+        scale = min(screen.width() / Scale.REF_W, screen.height() / Scale.REF_H)
+        win_w = min(int(Scale.DESIGN_W * scale), int(screen.width() * 0.9))
+        win_h = min(int(Scale.DESIGN_H * scale), int(screen.height() * 0.9))
         ui_factor = win_w / Scale.DESIGN_W
         self._S = Scale(QApplication.instance(), factor=ui_factor)
         self.setFixedSize(win_w, win_h)
@@ -579,7 +580,7 @@ class lufus(QMainWindow):
 
     def create_header(self, text):
         layout = QHBoxLayout()
-        layout.setContentsMargins(0, self._S.px(10), 0, self._S.px(5))
+        layout.setContentsMargins(0, self._S.px(4), 0, self._S.px(2))
         label = QLabel(text)
         label.setObjectName("sectionHeader")
         line = QFrame()
@@ -636,7 +637,7 @@ class lufus(QMainWindow):
     def init_ui(self):
         S = self._S
         FIELD_SPACING = S.px(2)
-        GROUP_SPACING = S.px(10)
+        GROUP_SPACING = S.px(5)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -650,9 +651,9 @@ class lufus(QMainWindow):
 
         scroll_content = QWidget()
         main_layout = QVBoxLayout(scroll_content)
-        main_layout.setSpacing(GROUP_SPACING)
+        main_layout.setSpacing(S.px(3))
         m = S.px(15)
-        main_layout.setContentsMargins(m, S.px(10), m, S.px(10))
+        main_layout.setContentsMargins(m, S.px(5), m, S.px(5))
 
         scroll.setWidget(scroll_content)
         outer_layout.addWidget(scroll)
@@ -739,7 +740,7 @@ class lufus(QMainWindow):
         grid_part.addWidget(self.combo_target, 1, 1)
         main_layout.addLayout(grid_part)
 
-        main_layout.addSpacing(S.px(16))
+        main_layout.addSpacing(S.px(6))
 
         main_layout.addLayout(
             self.create_header(self._T.get("header_format_options", "Format Options"))
@@ -831,8 +832,7 @@ class lufus(QMainWindow):
         chk_layout.addWidget(self.input_hash)
         main_layout.addLayout(chk_layout)
 
-        main_layout.addStretch()
-        main_layout.addSpacing(S.px(16))
+        main_layout.addSpacing(S.px(6))
 
         main_layout.addLayout(
             self.create_header(self._T.get("header_status", "Status"))
@@ -1493,4 +1493,4 @@ if __name__ == "__main__":
 
     window = lufus(usb_devices)
     window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec()) # Oink meow meow meow
