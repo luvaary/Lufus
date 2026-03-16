@@ -3,24 +3,20 @@ import os
 import glob
 import tempfile
 import re
-from typing import Optional, Callable
-from lufus.drives import states
+from lufus.drives import states  # [ANNOTATION] Remove unused 'Optional, Callable' import (flake8 F401).
 
 
 def run(cmd):
     subprocess.run(cmd, check=True)
 
 
-def run_out(cmd) -> str:
-    return subprocess.check_output(cmd, text=True).strip()
-
-
-def _get_wim_size(data_mount) -> int:
-    for pattern in ["install.wim", "install.esd", "INSTALL.WIM", "INSTALL.ESD"]:
-        matches = glob.glob(f"{data_mount}/sources/{pattern}")
-        if matches:
-            size = os.path.getsize(matches[0])
-            print(f"Found {matches[0]} ({size:,} bytes / {size / (1024**3):.2f} GiB)")
+def _get_wim_size(data_mount: str) -> int:  # [ANNOTATION] Add type hint; drop never-called run_out() dead-code helper.
+    """Return size in bytes of install.wim/esd, or 0 if not found."""
+    sources_dir = os.path.join(data_mount, "sources")  # [ANNOTATION] Build path once; iterate all entries with lowercase comparison instead of four hardcoded glob patterns.
+    for entry in glob.glob(os.path.join(sources_dir, "*")):  # [ANNOTATION] Glob all sources/ entries then compare lowercase to catch any case variant on Linux.
+        if os.path.basename(entry).lower() in ("install.wim", "install.esd"):  # [ANNOTATION] Case-insensitive check replaces patterns that silently missed mixed-case filenames.
+            size = os.path.getsize(entry)
+            print(f"Found {entry} ({size:,} bytes / {size / (1024**3):.2f} GiB)")
             return size
     print("WARNING: install.wim/install.esd not found in data partition sources/")
     return 0
@@ -77,7 +73,7 @@ def _fix_efi_bootloader(efi_mount):
     )
 
 
-def flash_windows(device, iso, progress_cb=None, status_cb=None):
+def flash_windows(device: str, iso: str, progress_cb=None, status_cb=None) -> bool:  # [ANNOTATION] Add type hints to public function signature for clarity.
     if not re.match(r"^/dev/(sd[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+)$", device):
         raise ValueError(f"Invalid device path: {device}")
 
@@ -92,7 +88,11 @@ def flash_windows(device, iso, progress_cb=None, status_cb=None):
 
     _status(f"flash_windows: starting for device={device}, iso={iso}")
 
-    iso_size = os.path.getsize(iso)
+    try:  # [ANNOTATION] Wrap getsize in try/except so a missing/unreadable ISO returns False instead of propagating OSError to caller.
+        iso_size = os.path.getsize(iso)
+    except OSError as e:  # [ANNOTATION] Catch OSError from getsize and report cleanly rather than crashing.
+        _status(f"flash_windows: cannot read ISO file: {e}")
+        return False
     _status(
         f"flash_windows: ISO size = {iso_size:,} bytes ({iso_size / (1024**3):.2f} GiB)"
     )
@@ -244,13 +244,13 @@ device: {device}
             else:
                 _status("No boot/ directory found in ISO extract")
 
-            for f in ["bootmgr", "bootmgr.efi"]:
-                src = _find_path_case_insensitive(host_extract, f)
+            for fname in ["bootmgr", "bootmgr.efi"]:  # [ANNOTATION] Rename loop variable 'f' to 'fname' to avoid shadowing the built-in and improve readability.
+                src = _find_path_case_insensitive(host_extract, fname)  # [ANNOTATION] Use 'fname' consistently after rename.
                 if src:
-                    run(["sudo", "cp", src, f"{mount_efi}/{f}"])
-                    _status(f"Copied {f} to EFI partition root")
+                    run(["sudo", "cp", src, f"{mount_efi}/{fname}"])  # [ANNOTATION] Use 'fname' in destination path after loop variable rename.
+                    _status(f"Copied {fname} to EFI partition root")  # [ANNOTATION] Use 'fname' in status message after loop variable rename.
                 else:
-                    _status(f"{f} not found in ISO extract (may be fine)")
+                    _status(f"{fname} not found in ISO extract (may be fine)")  # [ANNOTATION] Use 'fname' in status message after loop variable rename.
 
             _fix_efi_bootloader(mount_efi)
             _emit(88)
