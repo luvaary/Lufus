@@ -7,13 +7,13 @@ def _read_iso_label(iso_path: str) -> str:
         with open(iso_path, "rb") as f:
             f.seek(32808)
             return f.read(32).decode("ascii", errors="replace").strip()
-    except OSError:  # [ANNOTATION] Catch OSError specifically instead of bare Exception so unexpected errors still propagate.
+    except OSError:
         return ""
 
 
 def _label_is_windows(label: str) -> bool:
     label = label.upper()
-    if label.startswith("WIN"):  # [ANNOTATION] Remove redundant 'or label.startswith("WINDOWS")' — any "WINDOWS" string already starts with "WIN".
+    if label.startswith("WIN"):
         return True
     if label == "ESD-ISO":
         return True
