@@ -23,7 +23,7 @@ def unexpected():
     print("An unexpected error occurred")
 
 
-def _strip_partition_suffix(device: str) -> str:  # [ANNOTATION] Extract helper so NVMe/MMC/SCSI stripping is testable in isolation.
+def _strip_partition_suffix(device: str) -> str:
     """Strip a partition number suffix to get the raw block device.
 
     Handles NVMe (/dev/nvme0n1p1 -> /dev/nvme0n1), MMC
@@ -32,21 +32,21 @@ def _strip_partition_suffix(device: str) -> str:  # [ANNOTATION] Extract helper 
     partition suffix is found.
     """
     # NVMe: /dev/nvmeXnYpZ -> /dev/nvmeXnY
-    m = re.match(r"^(/dev/nvme\d+n\d+)p\d+$", device)  # [ANNOTATION] Dedicated NVMe pattern prevents stripping 'n1' number from device name.
+    m = re.match(r"^(/dev/nvme\d+n\d+)p\d+$", device)
     if m:
         return m.group(1)
     # MMC/eMMC: /dev/mmcblkXpY -> /dev/mmcblkX
-    m = re.match(r"^(/dev/mmcblk\d+)p\d+$", device)  # [ANNOTATION] Dedicated MMC pattern handles 'p' separator correctly.
+    m = re.match(r"^(/dev/mmcblk\d+)p\d+$", device)
     if m:
         return m.group(1)
     # Standard SCSI/SATA/USB: /dev/sdXN -> /dev/sdX
-    m = re.match(r"^(/dev/[a-z]+)\d+$", device)  # [ANNOTATION] Restrict to letter-only base name so numeric device names aren't mangled.
+    m = re.match(r"^(/dev/[a-z]+)\d+$", device)
     if m:
         return m.group(1)
     return device
 
 
-def FlashUSB(iso_path: str, raw_device: str, progress_cb=None, status_cb=None) -> bool:  # [ANNOTATION] Add type hints to public function signature for clarity.
+def FlashUSB(iso_path: str, raw_device: str, progress_cb=None, status_cb=None) -> bool:
     def _status(msg: str) -> None:
         print(msg)
         if status_cb:
@@ -55,7 +55,7 @@ def FlashUSB(iso_path: str, raw_device: str, progress_cb=None, status_cb=None) -
     _status(f"FlashUSB called: iso={iso_path}, device={raw_device}")
 
     original_device = raw_device
-    raw_device = _strip_partition_suffix(raw_device)  # [ANNOTATION] Use dedicated helper instead of bare re.sub which broke NVMe device names.
+    raw_device = _strip_partition_suffix(raw_device)
     if raw_device != original_device:
         _status(f"Stripped partition suffix: {original_device} -> {raw_device}")
 
@@ -99,11 +99,11 @@ def FlashUSB(iso_path: str, raw_device: str, progress_cb=None, status_cb=None) -
             f"Writing {iso_size:,} bytes to {raw_device}, this may take several minutes..."
         )
 
-        try:  # [ANNOTATION] Wrap Popen in inner try so FileNotFoundError returns False instead of propagating.
+        try:
             process = subprocess.Popen(
                 dd_args, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL
             )
-        except FileNotFoundError:  # [ANNOTATION] Catch missing 'dd' binary explicitly and return False gracefully.
+        except FileNotFoundError:
             _status("Flash failed: 'dd' utility not found. Install coreutils.")
             return False
 
@@ -112,7 +112,7 @@ def FlashUSB(iso_path: str, raw_device: str, progress_cb=None, status_cb=None) -
         buf = b""
         last_pct = -1
         while True:
-            chunk = process.stderr.readline()  # [ANNOTATION] Use readline() instead of read(256) to avoid partial-line parsing and potential blocking on exit.
+            chunk = process.stderr.readline()
             if not chunk:
                 break
             buf += chunk
@@ -143,7 +143,7 @@ def FlashUSB(iso_path: str, raw_device: str, progress_cb=None, status_cb=None) -
         _status(f"dd completed successfully: {iso_path} -> {raw_device}")
         return True
 
-    except OSError as e:  # [ANNOTATION] Catch OSError from os.path.getsize (missing file) so callers always get False not an exception.
+    except OSError as e:
         _status(f"Flash failed with OSError: {e}")
         return False
     except subprocess.CalledProcessError as e:
